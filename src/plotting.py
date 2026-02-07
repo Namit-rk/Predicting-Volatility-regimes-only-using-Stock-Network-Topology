@@ -1,14 +1,19 @@
-import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-from sklearn.metrics import ConfusionMatrixDisplay
-import networkx as nx
+# Needed dependencies
 import numpy as np
+import networkx as nx
+from sklearn.metrics import ConfusionMatrixDisplay
+
+# Plotting dependencies
+import seaborn as sns
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 
 
 def plot_confusion_matrix(y_test,y_pred):
 	"""
-    Plot a confusion matrix comparing true and predicted class labels.
+    Plot a confusion matrix comparing true and predicted class 
+	labels.
 
     Parameters
     ----------
@@ -42,9 +47,49 @@ def plot_confusion_matrix(y_test,y_pred):
 	)
 
 	plt.title("Confusion Matrix")
-	plt.show()
 	
+def plot_corr(corr):
+	"""
+	Plots the correlation plot of the given correlation dataset
 
+	Parameters
+	----------
+	corr : array-like of shape (n_features, n_features)
+		correlation matrix of the features
+
+	Returns
+	-------
+	None
+		This function does not return a value. It displays a plot.
+	"""
+	plt.figure(figsize=(10, 8))
+	sns.heatmap(corr, cmap="coolwarm", annot=True, fmt=".2f", center=0)
+	plt.title("Correlation Heatmap")
+	plt.show()
+
+def plot_pca_cum_var(cum_var):
+	"""
+	Plot the cumulative explained variance as a function of the number
+	of principal components.
+
+	Parameters
+	----------
+	cum_var : array-like of shape (n_components,)
+		Cumulative explained variance ratios obtained from PCA.
+
+	Returns
+	-------
+	None
+		This function does not return a value. It displays a plot.
+	"""
+	plt.figure(figsize=(6,4))
+	plt.plot(cum_var, marker="o")
+	plt.axhline(0.8, linestyle="--", color="gray")
+	plt.xlabel("Number of Components")
+	plt.ylabel("Cumulative Explained Variance")
+	plt.title("PCA Explained Variance")
+	plt.tight_layout()
+	plt.show()
 
 def network_plot(G, mean_returns, risk, year, show=True, save_path=None):
 	"""
@@ -69,6 +114,10 @@ def network_plot(G, mean_returns, risk, year, show=True, save_path=None):
 
 	save_path : str, optional
         File path to save the figure.
+	
+	Returns
+	-------
+	None
 
 	Notes
 	-----
@@ -76,7 +125,6 @@ def network_plot(G, mean_returns, risk, year, show=True, save_path=None):
 	  associated with the given network nodes
 	- We use the kamada_kawai_layout for our network 
 	  because it is stable enough to plot the 2008 crash
-	- This function does not return anything
 	"""
 	
     # Layout Fixed for stability

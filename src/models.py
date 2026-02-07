@@ -1,16 +1,46 @@
-import torch
+# Needed dependencies
+import os
+import random
 import numpy as np
+
+# Pytorch dependencies
+import torch
 import torch.nn as nn
 import torch.optim as optim
-import random
-import os
 
+# Scikit-learn dependencies
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
 
-
 def Regression(X_train, X_test, y_train, y_test):
+	"""
+	Uses Logistic Regression from scikit-learn and returns the test preictions 
+	and the probability of guessing true
+	
+	Parameters
+	----------
+	X_train : array like of shape (n_train_samples, n_features)
+		The features array used for training
+		
+	X_test : array like of shape (n_test_samples, n_features)
+		The features array used for testing
+		
+	y_train : array like of shape (n_train_samples, )
+		The target array used for training
+		
+	y_test : array like of shape (n_test_samples, )
+		The target array used for training
+		
+	Returns
+	-------
+	y_pred :  array like of shape (n_test_samples, )
+		The predictions of our target by our model
+		
+	y_prob : array like of shape (n_test_samples, )
+		The probability of each predictions being a positive
+	
+	"""
 	model = LogisticRegression(max_iter=3000)
 	model.fit(X_train, y_train)
 
@@ -20,17 +50,34 @@ def Regression(X_train, X_test, y_train, y_test):
 	return y_pred, y_prob
 
 
-class LogisticRegression(nn.Module):
-	def __init__(self, input_size):
-		super(LogisticRegression, self).__init__()
-		self.linear = nn.Linear(input_size, 1)
-
-	def forward(self, x):
-		return self.linear(x)
-
-
 def Regression_Pytorch(X_train, X_test, y_train, y_test):
-
+	"""
+	Uses Logistic Regression from our LogisticRegression class and pytorch,
+	returns the test preictions and the probability of guessing positive
+	
+	Parameters
+	----------
+	X_train : array like of shape (n_train_samples, n_features)
+		The features array used for training
+		
+	X_test : array like of shape (n_test_samples, n_features)
+		The features array used for testing
+		
+	y_train : array like of shape (n_train_samples, )
+		The target array used for training
+		
+	y_test : array like of shape (n_test_samples, )
+		The target array used for training
+		
+	Returns
+	-------
+	y_pred :  array like of shape (n_test_samples, )
+		The predictions of our target by our model
+		
+	y_prob : array like of shape (n_test_samples, )
+		The probability of each predictions being a positive
+	
+	"""
 
 	# REPRODUCIBILITY SETTINGS
 	SEED = 99
@@ -40,6 +87,15 @@ def Regression_Pytorch(X_train, X_test, y_train, y_test):
 	torch.manual_seed(SEED)
 	torch.cuda.manual_seed(SEED)
 	torch.cuda.manual_seed_all(SEED)
+	
+	# OUR LOGISTIC REGRESSION CLASS 
+	class LogisticRegression(nn.Module):
+		def __init__(self, input_size):
+			super(LogisticRegression, self).__init__()
+			self.linear = nn.Linear(input_size, 1)
+
+		def forward(self, x):
+			return self.linear(x)
 
 	# Fit scaler on training set only
 	scaler = StandardScaler()
@@ -88,14 +144,3 @@ def Regression_Pytorch(X_train, X_test, y_train, y_test):
 	return y_pred, y_prob
 
 
-
-
-
-def compute_node_statistics(returns_df):
-	"""
-	Compute node-level statistics required for network visualization.
-	"""
-	mean_returns = returns_df.mean().to_dict()
-	risk = returns_df.std().to_dict()
-
-	return mean_returns, risk
