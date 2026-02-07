@@ -5,7 +5,7 @@
 
 This project investigates whether **financial network features** extracted from stock return correlations can improve the prediction of **market volatility regimes** compared to traditional return-based features.
 
-We construct **correlation-based stock networks**—specifically the **Minimum Spanning Tree (MST)** and **Planar Maximally Filtered Graph (PMFG)**—on rolling windows of stock returns and extract structural network metrics. These features are then used to predict whether the market is in a **high-volatility** or **low-volatility** regime over a future horizon.
+We construct **correlation-based stock networks** specifically the **Minimum Spanning Tree (MST)** and **Planar Maximally Filtered Graph (PMFG)** on rolling windows of stock returns and extract structural network metrics. These features are then used to predict whether the market is in a **high-volatility** or **low-volatility** regime over a future horizon.
 
 ---
 
@@ -33,9 +33,9 @@ We construct **correlation-based stock networks**—specifically the **Minimum S
 
 For each rolling window of **60 trading days**, we compute the correlation matrix and transform it into a distance matrix using the Mantegna distance:
 
-[
+$$
 d_{ij} = \sqrt{2(1 - C_{ij})}
-]
+$$
 
 From this distance matrix, we construct:
 
