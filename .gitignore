@@ -1,0 +1,11 @@
+# Virtual environment
+venv/
+
+# Reference notebook
+stock_network_reference.ipynb
+
+# Python junk
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+based/
