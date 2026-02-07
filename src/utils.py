@@ -20,47 +20,51 @@ import torch.optim as optim
 import random
 import os
 
-def Indian_stocks_df(start_date:str, end_date:str) -> pd.DataFrame:
-	'''
-	Docstring for Indian_stocks_df
+from src.plotting import *
+from src.metrics import *
+from src.data_extraction import *
+
+# def Indian_stocks_df(start_date:str, end_date:str) -> pd.DataFrame:
+# 	'''
+# 	Docstring for Indian_stocks_df
 	
-	:param start_date: Start date to find the data
-	:type start_date: str
-	:param end_date: End date to find the data
-	:type end_date: str
-	:return: Dataframe contaning the stock data for the given timeline
-	:rtype: DataFrame
-	'''
-	stocks = pd.read_html('https://ournifty.com/stock-list-in-nse-fo-futures-and-options.html')[0]      # To obtain Tickers
+# 	:param start_date: Start date to find the data
+# 	:type start_date: str
+# 	:param end_date: End date to find the data
+# 	:type end_date: str
+# 	:return: Dataframe contaning the stock data for the given timeline
+# 	:rtype: DataFrame
+# 	'''
+# 	stocks = pd.read_html('https://ournifty.com/stock-list-in-nse-fo-futures-and-options.html')[0]      # To obtain Tickers
 	
-	stocks = (
-		stocks
-		.drop(columns=["SL NO", "LOT SIZE"])
-		.iloc[5:]  # cleaner than drop(index=[...])
-		.reset_index(drop=True)
-	)
+# 	stocks = (
+# 		stocks
+# 		.drop(columns=["SL NO", "LOT SIZE"])
+# 		.iloc[5:]  # cleaner than drop(index=[...])
+# 		.reset_index(drop=True)
+# 	)
 
-	tickers = stocks.SYMBOL.to_list()
-	tickers = [ticker + '.NS' for ticker in tickers]   # .NS is used by yfinance to distinguish the indian stock exchange so we need to add it to ticker symbol to get data       
+# 	tickers = stocks.SYMBOL.to_list()
+# 	tickers = [ticker + '.NS' for ticker in tickers]   # .NS is used by yfinance to distinguish the indian stock exchange so we need to add it to ticker symbol to get data       
 
-	# Batch download
-	data = yf.download(
-		tickers,
-		start=start_date,
-		end=end_date,
-		auto_adjust=False,
-		progress=False,
-		group_by="ticker"
-	)
+# 	# Batch download
+# 	data = yf.download(
+# 		tickers,
+# 		start=start_date,
+# 		end=end_date,
+# 		auto_adjust=False,
+# 		progress=False,
+# 		group_by="ticker"
+# 	)
 
-	# Extract close prices
-	close_df = pd.concat(
-		{ticker: data[ticker]["Close"] for ticker in tickers},
-		axis=1
-	)
+# 	# Extract close prices
+# 	close_df = pd.concat(
+# 		{ticker: data[ticker]["Close"] for ticker in tickers},
+# 		axis=1
+# 	)
 
-	close_df.index.name = "date"   
-	return close_df
+# 	close_df.index.name = "date"   
+# 	return close_df
 
 def make_PMFG_Network(df):
 	'''
@@ -93,56 +97,56 @@ def make_PMFG_Network(df):
 	return G
 
 
-def degree_entropy(G):
-    degrees = [d for _, d in G.degree()]
-    counts = Counter(degrees)
-    probs = np.array(list(counts.values())) / sum(counts.values())
-    return -np.sum(probs * np.log2(probs))
+# def degree_entropy(G):
+#     degrees = [d for _, d in G.degree()]
+#     counts = Counter(degrees)
+#     probs = np.array(list(counts.values())) / sum(counts.values())
+#     return -np.sum(probs * np.log2(probs))
 
-def compute_network_metrics(G, print_imp_nodes=False, top_k=5) -> pd.DataFrame:
-	'''
-	Docstring for compute_network_metrics
+# def compute_network_metrics(G, print_imp_nodes=False, top_k=5) -> pd.DataFrame:
+# 	'''
+# 	Docstring for compute_network_metrics
 	
-	:param G: Input network we need to find metrics off
-	:param print_imp_nodes: Wether or not we need to print the important nodes
-	:param top_k: The number of imprtant nodes (both central and Peripheral) we want to print
-	:return: Dataframe containing the key metrics
-	:rtype: DataFrame
-	'''
+# 	:param G: Input network we need to find metrics off
+# 	:param print_imp_nodes: Wether or not we need to print the important nodes
+# 	:param top_k: The number of imprtant nodes (both central and Peripheral) we want to print
+# 	:return: Dataframe containing the key metrics
+# 	:rtype: DataFrame
+# 	'''
 
-	results = {}
+# 	results = {}
 
-	# ---------- FULL GRAPH METRICS ----------
-	results["max_degree"] = max(dict(G.degree()).values())
-	results["avg_clustering"] = nx.average_clustering(G)
-	results["degree_entropy"] = degree_entropy(G)
+# 	# ---------- FULL GRAPH METRICS ----------
+# 	results["max_degree"] = max(dict(G.degree()).values())
+# 	results["avg_clustering"] = nx.average_clustering(G)
+# 	results["degree_entropy"] = degree_entropy(G)
 
-	# ---------- LARGEST CONNECTED COMPONENT ----------
-	lcc_nodes = max(nx.connected_components(G), key=len)
-	G_lcc = G.subgraph(lcc_nodes).copy()
+# 	# ---------- LARGEST CONNECTED COMPONENT ----------
+# 	lcc_nodes = max(nx.connected_components(G), key=len)
+# 	G_lcc = G.subgraph(lcc_nodes).copy()
 
-	results["average_distance"] = nx.average_shortest_path_length(G_lcc)
-	results["efficiency"] = nx.global_efficiency(G_lcc)
+# 	results["average_distance"] = nx.average_shortest_path_length(G_lcc)
+# 	results["efficiency"] = nx.global_efficiency(G_lcc)
 
-	communities = louvain_communities(G_lcc, seed=42)
-	results["modularity"] = modularity(G_lcc, communities) 
+# 	communities = louvain_communities(G_lcc, seed=42)
+# 	results["modularity"] = modularity(G_lcc, communities) 
 
-	betweenness = nx.betweenness_centrality(G_lcc, normalized=True)
+# 	betweenness = nx.betweenness_centrality(G_lcc, normalized=True)
 
-	central_nodes = sorted(betweenness.items(), key=lambda x: x[1], reverse=True)[:top_k]
-	peripheral_nodes = sorted(betweenness.items(), key=lambda x: x[1])[:top_k]
+# 	central_nodes = sorted(betweenness.items(), key=lambda x: x[1], reverse=True)[:top_k]
+# 	peripheral_nodes = sorted(betweenness.items(), key=lambda x: x[1])[:top_k]
 
-	if print_imp_nodes:
-				print("Important Nodes \n")
-				central_nodes = [ (node, round(value, 5)) for node, value in central_nodes]
-				print('The Central Nodes are : ',central_nodes)
-				peripheral_nodes = [ (node, round(value, 5)) for node, value in peripheral_nodes]
-				print('The Peripheral Nodes are : ',peripheral_nodes)
-				print()
+# 	if print_imp_nodes:
+# 				print("Important Nodes \n")
+# 				central_nodes = [ (node, round(value, 5)) for node, value in central_nodes]
+# 				print('The Central Nodes are : ',central_nodes)
+# 				peripheral_nodes = [ (node, round(value, 5)) for node, value in peripheral_nodes]
+# 				print('The Peripheral Nodes are : ',peripheral_nodes)
+# 				print()
 
-	df = pd.DataFrame([results])
+# 	df = pd.DataFrame([results])
 
-	return df
+# 	return df
 
 def make_MST_Network(df):
     corr = df.corr()
@@ -152,28 +156,28 @@ def make_MST_Network(df):
     
     return G
 
-def MST_metrics(G):
+# def MST_metrics(G):
     
-    mst = nx.minimum_spanning_tree(G)
+#     mst = nx.minimum_spanning_tree(G)
 
-    bet = nx.betweenness_centrality(mst, normalized=True)
+#     bet = nx.betweenness_centrality(mst, normalized=True)
 
-    row = {
-        # distance-based
-        "avg_distance": nx.average_shortest_path_length(mst),
-        "diameter": nx.diameter(mst),
-        "efficiency": nx.global_efficiency(mst),
+#     row = {
+#         # distance-based
+#         "avg_distance": nx.average_shortest_path_length(mst),
+#         "diameter": nx.diameter(mst),
+#         "efficiency": nx.global_efficiency(mst),
 
-        # degree-based
-        "max_degree": max(dict(mst.degree()).values()),
-        "degree_entropy": degree_entropy(mst),
+#         # degree-based
+#         "max_degree": max(dict(mst.degree()).values()),
+#         "degree_entropy": degree_entropy(mst),
 
-        # centrality-based
-        "max_betweenness": max(bet.values()),
-        "avg_betweenness": np.mean(list(bet.values()))
-    }
+#         # centrality-based
+#         "max_betweenness": max(bet.values()),
+#         "avg_betweenness": np.mean(list(bet.values()))
+#     }
     
-    return row
+#     return row
 
 def Regression(X_train, X_test, y_train, y_test):
 	model = LogisticRegression(max_iter=3000)
@@ -182,24 +186,27 @@ def Regression(X_train, X_test, y_train, y_test):
 	y_pred = model.predict(X_test)
 	y_prob = model.predict_proba(X_test)[:, 1]
 
-	print('--------------------------------------------------------------------------')
-	print("Accuracy:", accuracy_score(y_test, y_pred))
-	print("ROC-AUC:", roc_auc_score(y_test, y_prob))
-	print('--------------------------------------------------------------------------')
-	print('The Classification Report is: \n')
-	print(classification_report(y_test, y_pred))
-	print('--------------------------------------------------------------------------')
+	classification_metrics(y_test, y_pred, y_prob)
 
-	ConfusionMatrixDisplay.from_predictions(
-	y_test,
-	y_pred,
-	display_labels=["Low Vol", "High Vol"],
-	cmap="Blues",
-	values_format="d"
-	)
+	# print('--------------------------------------------------------------------------')
+	# print("Accuracy:", accuracy_score(y_test, y_pred))
+	# print("ROC-AUC:", roc_auc_score(y_test, y_prob))
+	# print('--------------------------------------------------------------------------')
+	# print('The Classification Report is: \n')
+	# print(classification_report(y_test, y_pred))
+	# print('--------------------------------------------------------------------------')
 
-	plt.title("Confusion Matrix")
-	plt.show()
+	# plot_confusion_matrix(y_test,y_pred)
+	# ConfusionMatrixDisplay.from_predictions(
+	# y_test,
+	# y_pred,
+	# display_labels=["Low Vol", "High Vol"],
+	# cmap="Blues",
+	# values_format="d"
+	# )
+
+	# plt.title("Confusion Matrix")
+	# plt.show()
 
 def Regression_Pytorch(X_train, X_test, y_train, y_test):
 
@@ -281,119 +288,44 @@ def Regression_Pytorch(X_train, X_test, y_train, y_test):
 	y_pred = y_pred_binary.squeeze().numpy()
 	y_prob = y_pred_proba.squeeze().numpy()
 
+	classification_metrics(y_test, y_pred, y_prob)
+	# print('--------------------------------------------------------------------------')
+	# print("Accuracy:", accuracy_score(y_test, y_pred))
+	# print("ROC-AUC:", roc_auc_score(y_test, y_prob))
+	# print('--------------------------------------------------------------------------')
+	# print('The Classification Report is: \n')
+	# print(classification_report(y_test, y_pred))
+	# print('--------------------------------------------------------------------------')
 
-	print('--------------------------------------------------------------------------')
-	print("Accuracy:", accuracy_score(y_test, y_pred))
-	print("ROC-AUC:", roc_auc_score(y_test, y_prob))
-	print('--------------------------------------------------------------------------')
-	print('The Classification Report is: \n')
-	print(classification_report(y_test, y_pred))
-	print('--------------------------------------------------------------------------')
+	# plot_confusion_matrix(y_test,y_pred)
 
-	ConfusionMatrixDisplay.from_predictions(
-	y_test,
-	y_pred,
-	display_labels=["Low Vol", "High Vol"],
-	cmap="Blues",
-	values_format="d"
-	)
+	# ConfusionMatrixDisplay.from_predictions(
+	# y_test,
+	# y_pred,
+	# display_labels=["Low Vol", "High Vol"],
+	# cmap="Blues",
+	# values_format="d"
+	# )
 
-	plt.title("Confusion Matrix")
-	plt.show()
+	# plt.title("Confusion Matrix")
+	# plt.show()
 
+# def classification_metrics(y_test, y_pred, y_prob):
+# 	print('--------------------------------------------------------------------------')
+# 	print("Accuracy:", accuracy_score(y_test, y_pred))
+# 	print("ROC-AUC:", roc_auc_score(y_test, y_prob))
+# 	print('--------------------------------------------------------------------------')
+# 	print('The Classification Report is: \n')
+# 	print(classification_report(y_test, y_pred))
+# 	print('--------------------------------------------------------------------------')
 
+# 	plot_confusion_matrix(y_test,y_pred)
 
-def network_plot(G, df, year):
-	'''
-	Docstring for network_plot
-	
-	:param G: Netwrok we need to plot
-	:param df: Dataframe used to make the network
-	'''
-	pos = nx.kamada_kawai_layout(G,weight=None)      # Layout Fixed for stability
+def compute_node_statistics(returns_df):
+	"""
+	Compute node-level statistics required for network visualization.
+	"""
+	mean_returns = returns_df.mean().to_dict()
+	risk = returns_df.std().to_dict()
 
-
-	degree_dict = dict(G.degree())                     # number of connections
-	deg_cent = nx.degree_centrality(G)                 # normalized centrality
-	mean_returns = dict(df.mean())                     # Mean returns of stock
-	risk = dict(df.std())							   # Risk associated with stock 
-
-	deg_values = np.array(list(deg_cent.values()))     # Node size : small base + mild scaling (IMPORTANT)
-	node_sizes = 10 + 30 * deg_values                 
-
-
-	edge_x = []
-	edge_y = []
-
-	for u, v in G.edges():							   # Connecting the edges
-		x0, y0 = pos[u]
-		x1, y1 = pos[v]
-		edge_x.extend([x0, x1, None])
-		edge_y.extend([y0, y1, None])
-
-	edge_trace = go.Scatter(
-		x=edge_x,
-		y=edge_y,
-		mode="lines",
-		line=dict(width=1, color="rgba(150,150,150,0.5)"),
-		hoverinfo="none"
-	)
-
-	# Node traces
-
-	node_x = []
-	node_y = []
-	hover_text = []
-
-	for node in G.nodes():
-		x, y = pos[node]
-		node_x.append(x)
-		node_y.append(y)
-
-		hover_text.append(
-			f"Stock: {node}<br>"
-			f"Degree: {degree_dict[node]}<br>"
-			f"Degree Centrality: {deg_cent[node]:.3f}<br>"
-			f"Average Daily Log Returns: {mean_returns[node]:.5f}<br>"
-			f"Risk : {risk[node]:.3f}"
-		)
-
-	node_trace = go.Scatter(
-		x=node_x,
-		y=node_y,
-		mode="markers",
-		textposition="top center",
-		hovertext=hover_text,
-		hoverinfo="text",
-		marker=dict(
-			size=node_sizes,
-			color=deg_values,
-			colorscale="Viridis",
-			showscale=True,
-			colorbar=dict(
-				title="Degree Centrality"
-			),
-			line=dict(width=1, color="black")
-		)
-	)
-
-	# -------------------------------
-	# 6. Figure
-	# -------------------------------
-	fig = go.Figure(
-		data=[edge_trace, node_trace],
-		layout=go.Layout(
-			title=dict(
-				text=f"Stock Correlation Network ({year})",
-				x=0.5
-			),
-			showlegend=False,
-			hovermode="closest",
-			margin=dict(b=20, l=10, r=10, t=40),
-			xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-			yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
-		)
-	)
-
-	fig.write_image(f"figures/pmfg_{year}.png", width=1000, height=500)
-	fig.show()
+	return mean_returns, risk
