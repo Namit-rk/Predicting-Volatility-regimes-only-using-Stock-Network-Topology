@@ -1,11 +1,13 @@
+# Importing Needed Dependencies
 import networkx as nx
-from collections import Counter
-from networkx.algorithms.community import louvain_communities, modularity
 import numpy as np
 import pandas as pd
+from collections import Counter
+
+
+from networkx.algorithms.community import louvain_communities, modularity
 from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.metrics import classification_report
-
 
 
 def degree_entropy(G):

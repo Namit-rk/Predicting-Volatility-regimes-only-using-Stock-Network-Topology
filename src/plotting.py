@@ -130,7 +130,6 @@ def network_plot(G, mean_returns, risk, year, show=True, save_path=None):
     # Layout Fixed for stability
 	pos = nx.kamada_kawai_layout(G,weight=None)      
 
-
 	degree_dict = dict(G.degree())                     
 	deg_cent = nx.degree_centrality(G)                 
 	deg_values = np.array(list(deg_cent.values())) 
