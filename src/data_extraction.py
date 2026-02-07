@@ -99,6 +99,9 @@ def batch_download_price_data(tickers, start_date:str, end_date:str) -> pd.DataF
 
 
 def pca_transformation(X, num_components,index,features):
+	"""
+	PCA tranformation of the given features and returning the transformed features
+	"""
 	scaler = StandardScaler()
 	X_scaled = scaler.fit_transform(X)
 
