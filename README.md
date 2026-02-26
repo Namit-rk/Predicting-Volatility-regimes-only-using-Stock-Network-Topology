@@ -1,176 +1,305 @@
+# Predicting Volatility Regimes Using Stock-Network Topology
 
-# 📈 Stock Market Volatility Regime Prediction Using Financial Networks
+This repository studies whether **financial-network structure** (instead of only raw returns) helps predict future market volatility regimes.
 
-## Overview
-
-This project investigates whether **financial network features** extracted from stock return correlations can improve the prediction of **market volatility regimes** compared to traditional return-based features.
-
-We construct **correlation-based stock networks** specifically the **Minimum Spanning Tree (MST)** and **Planar Maximally Filtered Graph (PMFG)** on rolling windows of stock returns and extract structural network metrics. These features are then used to predict whether the market is in a **high-volatility** or **low-volatility** regime over a future horizon.
+The project builds stock-correlation networks from Indian equities, extracts graph-level metrics, and uses those features in binary classification models to predict whether the next horizon is likely to be **high-volatility** or **low-volatility**.
 
 ---
 
-## Key Ideas
+## Research motivation
 
-* Stock correlations encode collective market behavior
-* Network topology captures structural changes during stress periods
-* Network-derived features may be more informative than raw returns
-* Rolling network analysis allows time-localized prediction
+Traditional volatility prediction models rely primarily on **time-series features** such as past returns, rolling variance, or GARCH-type estimators.
+However, financial markets are not independent time series — they are **interacting systems**.
 
----
+During market stress, assets stop behaving independently and begin moving collectively.
+Empirically this appears as:
 
-## Methodology
+* correlations rising sharply during crashes
+* sectoral boundaries weakening
+* market-wide synchronization
 
-### 1. Data
+Therefore, the central question of this project is:
 
-* Universe: **NIFTY 50 stocks**
-* Data source: Yahoo Finance
-* Input: Daily log returns
-* Time period: Post-2010 (pre-2010 market structure considered unstable)
+> **Can structural information about how stocks are connected predict future volatility regimes better than individual return behavior alone?**
 
----
+Instead of asking *“how volatile was the market?”*, we ask:
 
-### 2. Network Construction
+> **“How organized was the market?”**
 
-For each rolling window of **60 trading days**, we compute the correlation matrix and transform it into a distance matrix using the Mantegna distance:
-
-$$
-d_{ij} = \sqrt{2(1 - C_{ij})}
-$$
-
-From this distance matrix, we construct:
-
-* **Minimum Spanning Tree (MST)**
-* **Planar Maximally Filtered Graph (PMFG)**
-
-These networks preserve the strongest dependencies while filtering noise.
+Financial networks provide a way to quantify that organization.
 
 ---
 
-### 3. Feature Engineering
+## What this project does
 
-From each network, we extract structural features such as:
+* Builds rolling stock-correlation networks from log-return data
+* Constructs two filtered graph representations:
 
-* Average shortest path length
-* Network efficiency
-* Diameter
-* Maximum degree
-* Degree entropy
-* Betweenness centrality statistics
-* Modularity (for PMFG)
-
-We evaluate four feature sets:
-
-1. **Baseline**: Log returns only
-2. **Network features** (MST / PMFG)
-3. **PCA-reduced network features** (5 components)
-4. **Combined comparisons**
+  * **MST (Minimum Spanning Tree)**
+  * **PMFG (Planar Maximally Filtered Graph)**
+* Computes network descriptors (clustering, efficiency, modularity, degree entropy, centralization)
+* Trains classifiers for volatility-regime prediction
+* Compares network-feature performance against return-only baselines
 
 ---
 
-### 4. Prediction Task
+## Repository layout
 
-* **Task**: Binary classification
-* **Target**: Volatility regime (High vs Low)
-* **Prediction horizon**: Next 60 trading days
-* **Labeling**: Based on future realized volatility
-
----
-
-### 5. Models Used
-
-* **Logistic Regression (scikit-learn)**
-* **PyTorch-based unsupervised regression model**
-
-Models are evaluated using:
-
-* Accuracy
-* ROC-AUC
-
----
-
-## Results
-
-| Feature Set            | ROC-AUC   | Accuracy  |
-| ---------------------- | --------- | --------- |
-| Log returns (baseline) | ~0.59     | ~0.58     |
-| Network features       | ~0.63     | ~0.54**   |
-| PCA (5 components)     | ~0.64     | ~0.57     |
-
-**Key takeaway:**
-Network-based features significantly outperform raw return-based features, even with large rolling windows. The network based features is more conservative in predicting high volitality, wheras the log returns based features mostlypredicts high volitality
-
----
-
-## Repository Structure
-
-```text
-STOCK_NETWORK/
-│
-├── datas/                  # Raw and processed datasets
-├── figures/                # Network visualizations
-├── src/                     # Core source code
-│   ├── data_extraction.py   # Data ingestion & preprocessing
-│   ├── metrics.py           # Network & classification metrics
-│   ├── models.py            # ML & deep learning models
-│   ├── plotting.py          # Visualization utilities
-│   ├── utils.py             # Helper functions
+```
+.
+├── datas/
+│   ├── raw_data.csv
+│   ├── clean_data.csv
+│   └── log_returns_data.csv
+├── figures/
+│   ├── pmfg_2008.png
+│   ├── pmfg_2015.png
+│   ├── pmfg_2020.png
+│   └── pmfg_2008_2022.png
+├── src/
+│   ├── data_extraction.py
+│   ├── utils.py
+│   ├── metrics.py
+│   ├── models.py
+│   ├── plotting.py
 │   └── __init__.py
-│
-├── network_analysis.ipynb   # Main analysis notebook
-├── data_cleaning.ipynb     # Data preprocessing
-│
+├── data_cleaning.ipynb
+├── network_analysis.ipynb
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## How to Run
+## End-to-end workflow
 
-### 1. Create a virtual environment
+### 1. Collect universe and prices
+
+* `get_top_indian_stocks_tickers()` scrapes NSE F&O symbols and maps to Yahoo Finance (`.NS`)
+* `batch_download_price_data(...)` downloads close prices
+
+### 2. Clean and transform data
+
+* Missing data filtering and stock selection handled in `data_cleaning.ipynb`
+* Log returns form the modeling input
+
+### 3. Build network snapshots
+
+* `make_PMFG_Network(df)` constructs planar filtered networks
+* `make_MST_Network(df)` constructs the minimum spanning tree using correlation distance
+
+### 4. Engineer network features
+
+`compute_network_metrics(G)` extracts:
+
+* clustering coefficient
+* average shortest path
+* efficiency
+* modularity
+* max degree
+* degree entropy
+
+### 5. Train classifiers
+
+* `Regression(...)` — logistic regression (scikit-learn baseline)
+* `Regression_Pytorch(...)` — logistic model implemented in PyTorch
+
+### 6. Evaluate
+
+`classification_metrics(...)` reports:
+
+* Accuracy
+* ROC-AUC
+* Confusion matrix
+
+---
+
+## Why network filtering?
+
+A raw correlation matrix is dense and extremely noisy.
+For **N stocks**, there are `N(N−1)/2` pairwise relationships, most of which are spurious.
+
+Filtered financial networks solve this.
+
+### Minimum Spanning Tree (MST)
+
+Keeps only the strongest dependencies needed to maintain connectivity (N−1 edges).
+This extracts the market’s **dependency backbone**.
+
+### Planar Maximally Filtered Graph (PMFG)
+
+Allows more edges while preserving planarity.
+This preserves sector clusters while still removing noise.
+
+Intuition:
+
+| Market State | Network Structure             |
+| ------------ | ----------------------------- |
+| Normal       | modular, sector-clustered     |
+| Crisis       | centralized, highly connected |
+
+Thus, **topology itself becomes a market state variable**.
+
+---
+
+## Volatility labeling
+
+* Rolling windows: 60 trading days
+* Prediction horizon: future 60 trading days
+* Target: high vs low realized volatility
+
+Realized volatility is computed from future returns and thresholded to define the regime.
+
+---
+
+## Data notes
+
+* Wide format dataset (one column per ticker)
+* First log-return row contains NaNs after differencing
+* Sensitive to window size and labeling threshold
+
+---
+
+## Outputs
+
+* PMFG visualizations in `figures/`
+* Classification metrics
+* Confusion matrices
+* PCA analysis
+* Network plots
+
+---
+
+## Key findings
+
+The network features exhibited systematic structural changes across regimes.
+
+### Low-volatility periods
+
+* higher modularity
+* sector clustering
+* longer average path length
+* decentralized structure
+
+### High-volatility periods
+
+* correlations spike
+* network diameter shrinks
+* central nodes emerge
+* degree entropy decreases
+
+**Interpretation**
+
+Market crises are not merely periods of large price movement — they are periods of **synchronization**.
+
+> Volatility increases when the market begins to behave like a single asset.
+
+This suggests topology can be predictive because **structural organization changes before realized volatility spikes**.
+
+---
+
+## Setup
+
+### Create environment
 
 ```bash
-python -m venv venv
-source venv/bin/activate   # Linux/macOS
-venv\Scripts\activate      # Windows
+python -m venv .venv
+source .venv/bin/activate
 ```
 
-### 2. Install dependencies
+Windows:
 
-```bash
+```
+.venv\Scripts\activate
+```
+
+### Install dependencies
+
+```
 pip install -r requirements.txt
 ```
 
-### 3. Run the analysis
+---
 
-Open and run:
+## Running the project
 
-```text
-network_analysis.ipynb
+Primary workflow is notebook-driven:
+
+1. Run `data_cleaning.ipynb`
+2. Run `network_analysis.ipynb`
+
+---
+
+## Quick start example
+
+```python
+import pandas as pd
+from src.utils import make_PMFG_Network
+from src.metrics import compute_network_metrics
+
+returns = pd.read_csv(
+    "datas/log_returns_data.csv",
+    parse_dates=["date"],
+    index_col="date"
+).dropna()
+
+G = make_PMFG_Network(returns)
+features = compute_network_metrics(G)
+
+print(features)
 ```
 
-All experiments and plots are reproducible from this notebook.
+---
+
+## Limitations and caveats
+
+* Yahoo Finance ticker coverage may drift
+* PMFG construction is computationally heavy
+* Regime labels depend on volatility threshold
+* Results are **research-oriented and not trading signals**
 
 ---
 
-## Visualizations
+## What this project demonstrates
 
-The `figures/` directory contains example PMFG visualizations for different years, illustrating how market structure evolves over time.
+**Quantitative finance**
+
+* volatility regime definition
+* realized volatility forecasting
+
+**Network science / econophysics**
+
+* correlation distance transformation
+* MST & PMFG construction
+* topology interpretation
+
+**Machine learning**
+
+* feature engineering from graph structure
+* binary classification with temporal dependence
+
+**Software engineering**
+
+* modular research code
+* reproducible pipeline
+* automated data ingestion
+
+Central takeaway:
+
+> Market volatility is not only a statistical phenomenon — it is a structural one, which could help in prediction of risk.
 
 ---
 
-## Notes & Limitations
+## Future work
 
-* Rolling window size is fixed at 60 days
-* Regime labels depend on volatility threshold choice
-* Network construction is computationally expensive
-* Results are indicative, not predictive trading signals
+Possible extensions:
 
----
+* dynamic (time-evolving) financial networks
+* graph neural networks on rolling graphs
+* multi-asset networks (equities + bonds + commodities)
+* systemic risk early-warning indicators
 
 
-## Final Remarks
-
-This project demonstrates that **financial network topology contains predictive information** about future market volatility regimes. Even simple classifiers benefit from network-derived features, highlighting the value of structural market analysis.
-
----
+* your research thinking
+* your math maturity
+* and your market intuition.
